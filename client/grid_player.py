@@ -9,7 +9,7 @@ class GridPlayer:
         self.foo = True
         self.turns_taken = 0
         self.resource_reserve = 50
-        self.min_melee = 0
+        self.min_melee = 1
         self.melee_hold_points = {}
 
     def tick(self, game_map: Map, your_units: Units, enemy_units: Units,
@@ -34,10 +34,16 @@ class GridPlayer:
         print("melees", len(self.melees), self.melees)
 
         print('melee move')
-        self.move_melees()
+        try:
+            self.move_melees()
+        except:
+            pass
 
         print('worker move')
-        self.optimize_worker_paths()
+        try:
+            self.optimize_worker_paths()
+        except:
+            pass
 
         self.turns_taken += 1
         print(turns_left)
@@ -225,26 +231,26 @@ class GridPlayer:
                 q = melee.can_attack(self.enemy_units)
                 if q:
                     self.moves.append(melee.attack(q[0][1]))
-                elif t[0][1] == 2 and enemy.attr['type'] == 'melee':
+                    continue
+                if t[0][1] == 2 and enemy.attr['type'] == 'melee' and enemy.attr['stun_status'] == 0:
                     b = melee.can_stun(self.enemy_units)
-                    b.sort(key=lambda x: x[0].attr['type'])
-                    print('lambda', b)
+                    b = [x for x in b if x[0].attr['type'] == 'melee']
                     if b:
                         if self.resources >= 50:
                             self.resources -= 50
                             self.moves.append(melee.stun(b[0][1]))
                             print('stunned')
+                            continue
                     pass
 
+                blocks = self.bfs_blocks(enemy=False)
+                if (melee.x, melee.y) in blocks:
+                    blocks.remove((melee.x, melee.y))
+                bfs = self.better_bfs(self.game_map, (melee.x, melee.y), (enemy.x, enemy.y), blocks)
+                if bfs is None:
+                    self.moves.append(melee.move(melee.direction_to((enemy.x, enemy.y))))
                 else:
-                    blocks = self.bfs_blocks(enemy=False)
-                    if (melee.x, melee.y) in blocks:
-                        blocks.remove((melee.x, melee.y))
-                    bfs = self.better_bfs(self.game_map, (melee.x, melee.y), (enemy.x, enemy.y), blocks)
-                    if bfs is None:
-                        self.moves.append(melee.move(melee.direction_to((enemy.x, enemy.y))))
-                    else:
-                        self.moves.append(melee.move(melee.direction_to(bfs[1])))
+                    self.moves.append(melee.move(melee.direction_to(bfs[1])))
 
             elif (abs(melee.x - point[0]) + abs(melee.y - point[1]) > 2):
                 # move towards point
@@ -327,7 +333,7 @@ class GridPlayer:
             if enemy_moves is None:
                 return False
             # if len(enemy_moves) <= worker.attr['mining_status'] + worker.attr['mining_status'] + worker.attr['stun_status'] + 1:
-            if len(enemy_moves) <= 5:
+            if len(enemy_moves) <= 3:
                 return True
         return False
 
