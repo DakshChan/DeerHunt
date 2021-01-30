@@ -9,7 +9,7 @@ class GridPlayer:
         self.foo = True
         self.turns_taken = 0
         self.resource_reserve = 50
-        self.min_melee = 1
+        self.min_melee = 2
         self.melee_hold_points = {}
 
     def tick(self, game_map: Map, your_units: Units, enemy_units: Units,
@@ -77,7 +77,7 @@ class GridPlayer:
             elif self.worker_in_danger(worker):
                 print('danger')
                 self.worker_danger_avoidance(worker)
-            elif (worker_count < len(resources) or self.min_melee > len(self.melees)) and self.resources >= self.resource_reserve:
+            elif (worker_count < int(len(resources) * 0.75) or self.min_melee > len(self.melees)) and self.resources >= self.resource_reserve:
                 print('spawn')
                 if self.min_melee > len(self.melees) and self.resources >= 150:
                     self.worker_spawn(worker, 'melee')
@@ -269,8 +269,8 @@ class GridPlayer:
                 # self.moves.append(melee.move_towards(point))
                 pass
             else:
-                # wait i guess
-                pass
+                if self.game_map.is_resource(melee.x, melee.y):
+                    self.moves.append(melee.move(random.choice(['UP', 'DOWN', 'LEFT', 'RIGHT'])))
 
 
 
